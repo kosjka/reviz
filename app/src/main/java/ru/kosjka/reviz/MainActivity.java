@@ -27,6 +27,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         btnScan = (Button) this.findViewById(R.id.btnScan);
+        tvBarcode =(TextView) this.findViewById(R.id.textView);
+
         final Activity activity = this;
         btnScan.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -40,10 +42,12 @@ public class MainActivity extends AppCompatActivity {
                 integrator.initiateScan();
             }
         });
+
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
         if(result != null) {
             if(result.getContents() == null) {
@@ -59,5 +63,18 @@ public class MainActivity extends AppCompatActivity {
             // This is important, otherwise the result will not be passed to the fragment
             super.onActivityResult(requestCode, resultCode, data);
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString("tvBarcode",tvBarcode.getText().toString());
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        tvBarcode.setText(savedInstanceState.getString("tvBarcode"));
+
     }
 }
