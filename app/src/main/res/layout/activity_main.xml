@@ -10,20 +10,75 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="ru.kosjka.reviz.MainActivity">
 
-    <Button
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:weightSum="1"
+        android:id="@+id/linearLayout">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:id="@+id/tvBarcode"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="false"
+            android:layout_alignParentStart="false"
+            android:layout_weight="0.98" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Сканировать"
+            android:id="@+id/btnScan"
+            android:layout_alignParentEnd="true"
+            android:layout_alignBottom="@+id/tvFullName" />
+    </LinearLayout>
+
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Сканировать"
-        android:id="@+id/btnScan"
-        android:layout_below="@+id/textView"
-        android:layout_centerHorizontal="true" />
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:id="@+id/tvFullName"
+        android:layout_below="@+id/linearLayout"
+        android:layout_alignParentStart="true"
+        android:layout_alignEnd="@+id/linearLayout" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:ems="10"
+        android:id="@+id/etQty"
+        android:layout_below="@+id/tvQty"
+        android:layout_alignParentStart="true"
+        android:layout_toStartOf="@+id/btnOk" />
 
     <TextView
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        android:id="@+id/textView"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="false"
-        android:layout_alignParentStart="false" />
+        android:id="@+id/tvQty"
+        android:layout_below="@+id/tvFullName"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="44dp" />
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@android:string/yes"
+        android:id="@+id/btnOk"
+        android:layout_alignBottom="@+id/etQty"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TEST"
+        android:id="@+id/btnTest"
+        android:layout_below="@+id/btnOk"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="72dp" />
 </RelativeLayout>
