@@ -76,9 +76,17 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="TEST"
-        android:id="@+id/btnTest"
-        android:layout_below="@+id/btnOk"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="72dp" />
+        android:text="@string/btnOpen"
+        android:id="@+id/btnOpen"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_toStartOf="@+id/btnSend" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/btnSend"
+        android:id="@+id/btnSend"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true" />
 </RelativeLayout>
