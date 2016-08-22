@@ -1,5 +1,6 @@
 package ru.kosjka.reviz;
 
+import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -19,15 +20,23 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -42,6 +51,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private final int REQUEST_SCAN = 1;
     private final int REQUEST_DBSELECT = 2;
     private final int REQUEST_SEND = 3;
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
 
 
     @Override
@@ -95,6 +109,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     private boolean copyDatabase(Context context) {
@@ -142,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                                    break;
                     case REQUEST_DBSELECT:
                         try {
-                            //File file = new File("/sdcard/Download/reviz.db");
+                            //File file = new File("/sdcard/goods");
                             //InputStream inputStream = new FileInputStream(file);
                             ContentResolver cr = getContentResolver();
                             InputStream inputStream = cr.openInputStream(data.getData());
@@ -191,6 +208,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
+    @SuppressLint("SdCardPath")
     @Override
     public void onClick(View view) {
         SQLiteDatabase database = dbHelper.getWritableDatabase();
@@ -207,26 +225,123 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 break;
             case R.id.btnOpen:
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.setType("application/octet-stream");
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                startActivityForResult(intent, REQUEST_DBSELECT);
+//                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+//                intent.setType("application/octet-stream");
+//                intent.addCategory(Intent.CATEGORY_OPENABLE);
+//                startActivityForResult(intent, REQUEST_DBSELECT);
+                dbHelper.getReadableDatabase();
+                //Copy db
+                if (copyDatabase(this)) {
+                    Toast.makeText(this, "Copy database succes", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Copy data error", Toast.LENGTH_SHORT).show();
+                }
+                RandomAccessFile in = null;
+                database.beginTransaction();
+                try {
+                    in = new RandomAccessFile("/sdcard/goods", "r");
+                    for (int i=0;i<in.length()/140;i++) {
+                            byte[] byteNgoods = new byte[4];
+                            in.read(byteNgoods, 0, 4);
+                            int ngoods = java.nio.ByteBuffer.wrap(byteNgoods).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt();
+                            byte xbyte = in.readByte();
+                            byte[] tempId = new byte[xbyte];
+                            byte[] temp = new byte[131];
+                            in.read(tempId, 0, xbyte);
+                            in.read(temp, 0, 131-xbyte);
+                            String fullgoods = new String(tempId);
+                            byte[] bytePrice = new byte[4];
+                            in.read(bytePrice, 0, 4);
+                            //int price = java.nio.ByteBuffer.wrap(bytePrice).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt();
+                          contentValues.put("ngoods",ngoods);
+                          contentValues.put("fullname",fullgoods);
+                          contentValues.put("qty",0);
+                          //contentValues.put("");
+                           database.insert("goods",null,contentValues);
+                    }
+                    in.close();
+                    contentValues.clear();
+                    in = new RandomAccessFile("/sdcard/codes", "r");
+                    for (int i=0;i<in.length()/24;i++) {
+                        byte[] byteNgoods = new byte[4];
+                        in.read(byteNgoods, 0, 4);
+                        int ngoods = java.nio.ByteBuffer.wrap(byteNgoods).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt();
+                        byte xbyte = in.readByte();
+                        byte[] tempId = new byte[xbyte];
+                        byte[] temp = new byte[15];
+                        in.read(tempId, 0, xbyte);
+                        in.read(temp, 0, 15-xbyte);
+                        String barcode = new String(tempId);
+                        byte[] byteQty = new byte[4];
+                        in.read(byteQty, 0, 4);
+                        int qty = java.nio.ByteBuffer.wrap(byteQty).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt();
+                       // System.out.printf("Код: %d, Длина строки: %d, Штрих-код: %s, количество шт в упаковке: %d шт.\n", ngoods, xbyte, barcode, qty);
+                        contentValues.put("ngoods",ngoods);
+                        contentValues.put("barcode",barcode);
+                        database.insert("barcodes",null,contentValues);
+                    }
+                    database.setTransactionSuccessful();
+                    contentValues.clear();
+                    in.close();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }finally {
+                    database.endTransaction();
+                    Toast.makeText(this, "База прогружена", Toast.LENGTH_SHORT).show();
+                }
                 break;
             case R.id.btnSend:
-                if (copy(DBHelper.DBLOCATION + DBHelper.DBNAME, "/sdcard/send.db")) {
-                    File filelocation = new File("/sdcard/send.db");
+//                if (copy(DBHelper.DBLOCATION + DBHelper.DBNAME, "/sdcard/send.db")) {
+//                    File filelocation = new File("/sdcard/send.db");
+//                    Uri path = Uri.fromFile(filelocation);
+//                    Intent emailIntent = new Intent(Intent.ACTION_SEND);
+//                    emailIntent.setType("*/*");
+//                    String to[] = {"kosjka@ro.ru"};
+//                    emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
+//                    emailIntent.putExtra(Intent.EXTRA_STREAM, path);
+//                    emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Subject");
+//                    startActivity(Intent.createChooser(emailIntent, "Send email..."));
+//                }
+                Cursor cursor = database.rawQuery("select g.ngoods,  g.qty from goods g where g.qty <> ? ",
+                        new String[]{"0"});
+                if (cursor != null) {
+                    cursor.moveToFirst();
+                   RandomAccessFile out = null;
+                    try {
+                        //OutputStream in = new FileOutputStream("/sdcard/reviz");
+                        out = new RandomAccessFile("/sdcard/reviz", "rw");
+                        do{
+                            byte[] bngoods = ByteBuffer.allocate(4).putInt(cursor.getInt(cursor.getColumnIndex("ngoods"))).array();
+                            out.writeInt( ByteBuffer.wrap(bngoods).order(ByteOrder.LITTLE_ENDIAN).getInt());
+                            out.writeInt(0);
+                            byte[] btempqty = ByteBuffer.allocate(8).putDouble(cursor.getInt(cursor.getColumnIndex("qty"))).array();
+                            byte[] bqty = new byte [8];
+                            for(int j= 0;j<8;j++){
+                                bqty[j]=btempqty[7-j];
+                            }
+                            out.write(bqty);
+                        } while (cursor.moveToNext());
+                        out.close();
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    cursor.close();
+                    File filelocation = new File("/sdcard/reviz");
                     Uri path = Uri.fromFile(filelocation);
                     Intent emailIntent = new Intent(Intent.ACTION_SEND);
-// set the type to 'email'
                     emailIntent.setType("*/*");
                     String to[] = {"kosjka@ro.ru"};
                     emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
-// the attachment
                     emailIntent.putExtra(Intent.EXTRA_STREAM, path);
-// the mail subject
                     emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Subject");
                     startActivity(Intent.createChooser(emailIntent, "Send email..."));
-                }
+                }else {cursor.close();}
+
+
                 break;
         }
     }
@@ -248,12 +363,47 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     void findGoods() {
         SQLiteDatabase database = dbHelper.getWritableDatabase();
-        ContentValues contentValues = new ContentValues();
+        //ContentValues contentValues = new ContentValues();
         Log.d(MYLOG, "start find ngoods");
-        Cursor cursor = database.rawQuery("select g.ngoods, g.fullname, g.qty from barcodes b " +
-                        "inner join goods g on b.ngoods = g.ngoods where b.barcode = ?",
-                new String[]{tvBarcode.getText().toString()});
-        Log.d(MYLOG, "finish find ngoods");
+        String str = null;
+        Log.d(MYLOG, String.valueOf(tvBarcode.getText().toString().length()));
+        //if (tvBarcode.getText().toString().length()==13){
+
+            str = tvBarcode.getText().toString().substring(0,2);
+        //}
+        Cursor cursor;
+        int intngoods;
+        String str3;
+        switch (str){
+        //if (str=="98" || str=="00") {
+            case "98":
+                Log.d(MYLOG, str+" str");
+                str3 = tvBarcode.getText().toString().substring(5, 12);
+                Log.d(MYLOG, str3+" str3");
+                intngoods = Integer.valueOf(str3);
+                Log.d(MYLOG, String.valueOf(ngoods)+" ngoods");
+                cursor = database.rawQuery("select g.ngoods, g.fullname, g.qty " +
+                                " from goods g where g.ngoods = ?",
+                    new String[]{String.valueOf(intngoods)});
+                break;
+            case "00":
+                Log.d(MYLOG, str+" str");
+                str3 = tvBarcode.getText().toString().substring(5, 11);
+                Log.d(MYLOG, str3+" str3");
+                intngoods = Integer.valueOf(str3);
+                Log.d(MYLOG, String.valueOf(intngoods)+" ngoods");
+                cursor = database.rawQuery("select g.ngoods, g.fullname, g.qty " +
+                                " from goods g where g.ngoods = ?",
+                        new String[]{String.valueOf(intngoods)});
+                break;
+            default:
+                cursor = database.rawQuery("select g.ngoods, g.fullname, g.qty from barcodes b " +
+                                "inner join goods g on b.ngoods = g.ngoods where b.barcode = ?",
+                        new String[]{tvBarcode.getText().toString()});
+                break;
+
+        }
+            Log.d(MYLOG, "finish find ngoods");
         if (cursor != null && cursor.getCount() == 1) {
             cursor.moveToFirst();
             Log.d(MYLOG, "cursor out start");
@@ -301,4 +451,43 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "Main Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://ru.kosjka.reviz/http/host/path")
+        );
+        AppIndex.AppIndexApi.start(client, viewAction);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "Main Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://ru.kosjka.reviz/http/host/path")
+        );
+        AppIndex.AppIndexApi.end(client, viewAction);
+        client.disconnect();
+    }
 }
