@@ -1,6 +1,16 @@
 <resources>
     <string name="app_name">Reviz</string>
     <string name="ok">OK</string>
-    <string name="btnOpen">Открыть базу</string>
+    <string name="btnOpen">Новая ревизия</string>
     <string name="btnSend">Отправить ревизию</string>
+    <string name="title">Внимание !!!</string>
+    <string name="dialogacceptmessage">Начать новую ревизию? Предыдущая ревизия будет УДАЛЕНА!!! </string>
+    <string name="yes">Да</string>
+    <string name="cancel">Отмена</string>
+    <string name="btntest">Найти шк</string>
+    <string name="dialoginternetmessage">Проверьте соединение с интернетом.</string>
+    <string name="dbLoaded">База прогружена</string>
+    <string name="notSelectGood">Сначала выберите товар!</string>
+    <string name="notSetedQty">Введите количество!</string>
+    <string name="email">kosjka@ro.ru</string>
 </resources>
